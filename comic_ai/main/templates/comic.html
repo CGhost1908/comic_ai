@@ -1,0 +1,515 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Comic</title>
+    <link rel="stylesheet" href="{% static "comic.css" %}">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+    <!-- html2canvas-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div class="popup-main">
+        <div class="export-loading-popup popup">
+            <div class="progress" style="background-image: url({%static 'src/bg2.png'%});">
+                <img src="{% static 'src\man-running.gif'%}" class="running">
+            </div>
+        </div>
+        <div class="overlay"></div>
+    </div>
+    <div class="content">
+        <div class="top-nav">
+            <div class="left">
+                <button class="home top-btn" onclick="window.location.href='{% url 'home' %}'"><iconify-icon icon="ic:round-home"></iconify-icon></button>
+                <button class="new file-btn" onclick="window.location.href='{% url 'comic' %}'">New</button>
+                <button class="save file-btn">Save</button>
+                <button class="save-as file-btn">Save as</button>
+            </div>
+            <div class="right">
+                <button class="new-page top-btn" onclick="addPage()"><iconify-icon icon="mingcute:file-new-fill"></iconify-icon></button>
+                <button class="undo top-btn"><iconify-icon icon="ion:arrow-undo"></iconify-icon></button>
+                <button class="redo top-btn"><iconify-icon icon="ion:arrow-redo"></iconify-icon></button>
+                <button class="export top-btn" onclick="exportComic()">Export<iconify-icon icon="typcn:export"></iconify-icon></button>
+            </div>
+        </div>
+        <div class="row2">
+            {% csrf_token %}
+            <div class="inner">
+                <div class="item-settings"></div>
+                <div class="page-thumbnails">
+                    <div class="drag-area" style="height: 20px; width: 100%; padding: 5px 0 10px 0; display: flex; justify-content: center;">
+                        <iconify-icon style="color: #fff; font-size: 24px;" icon="ooui:draggable"></iconify-icon>
+                    </div>
+                    <div class="page-clones"></div>
+                    <div class="new-page2" onclick="addPage()"><iconify-icon icon="mingcute:add-fill"></iconify-icon></div>
+                </div>
+                <div class="page-settings-popup">
+                    <div style="display: flex; flex-direction: row;">
+                        <div class="page-settings-drag-area" style="height: 20px; width: 100%; padding: 5px 0 10px 0; display: flex; justify-content: center;">
+                            <iconify-icon style="color: #fff; font-size: 24px; margin-right: -40px;" icon="ooui:draggable"></iconify-icon>
+                        </div>
+                        <div onclick="closeEditPage()" style="width: 40px; height: 40px; display:flex; align-items:center; justify-content: center; cursor: pointer;">
+                            <iconify-icon style="font-size: 24px;" icon="mingcute:close-fill"></iconify-icon>
+                        </div>
+                    </div>
+                    <label for="">Page Color</label>
+                    <div class="colors">
+                        <button value="white" class="white color"></button>
+                        <button value="black" class="black color"></button>
+                        <button value="gray" class="gray color"></button>
+                        <button value="bisque" class="bisque color"></button>
+                        <button value="red" class="red color"></button>
+                        <button value="orange" class="orange color"></button>
+                        <button value="yellow" class="yellow color"></button>
+                        <button value="powderblue" class="powderblue color"></button>
+                        <button value="blue" class="blue color"></button>
+                        <button value="green" class="green color"></button>
+                        <button value="pink" class="pink color"></button>
+                        <button value="violet" class="violet color"></button>
+                    </div>
+                </div>
+                <div class="properties-popup">
+                    <div style="display: flex; width: 100%;">
+                        <div class="properties-drag-area" style="margin-right: -24px; height: 26px; width: 100%; padding: 5px 0 10px 0; display: flex; justify-content: center; align-items: center;">
+                            Properties
+                        </div>
+                        <button class="delete-item-button"><iconify-icon class="" icon="material-symbols-light:delete" width="30" height="30"></iconify-icon></button>
+                    </div>
+                    <div class="properties">
+                        <div style="display: flex; flex-direction: row; justify-content: space-between; width: 90%;">
+                            <label style="width: 45%;" for="" class="width">Width:<div style="margin-left: 10px; display: flex; flex-direction: row; align-items: center;"><input class="set-width" type="number" value="0" min="0" max="2000"><p style="width: 15px; margin-left: 5px;"> px</p></div></label>
+                            <label style="width: 45%;" for="" class="height">Height:<div style="margin-left: 10px; display: flex; flex-direction: row; align-items: center;"><input class="set-height" type="number" value="0" min="0" max="2000"><p style="width: 15px; margin-left: 5px;"> px</p></div></label>
+                        </div>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between; width: 90%;">
+                            <label style="width: 45%;" for="" class="x-coordinate">X:<div style="margin-left: 10px; display: flex; flex-direction: row; align-items: center;"><input class="set-x" type="number" value="0" min="-1000" max="1000"><p style="width: 15px; margin-left: 5px;"> px</p></div></label>
+                            <label style="width: 45%;" for="" class="y-coordinate">Y:<div style="margin-left: 10px; display: flex; flex-direction: row; align-items: center;"><input class="set-y" type="number" value="0" min="-1000" max="1000"><p style="width: 15px; margin-left: 5px;"> px</p></div></label>
+                        </div>
+                        <div style="display: flex; flex-direction: row; justify-content: space-between; width: 90%;">
+                            <label style="width: 45%;" for="" class="z-coordinate">Z:<div style="margin-left: 10px; display: flex; flex-direction: row; align-items: center;"><input class="set-z" type="number" value="0" min="0" max="1000"><p style="width: 15px; margin-left: 5px;"></p></div></label>
+                        </div>
+
+                        <label for="" class="rotate">Rotation:<div style="margin-left: 10px; display: flex; flex-direction: row; align-items: center;"><input class="set-rotate" type="number" value="0" min="-360" max="360"><p style="width: 15px; margin-left: 5px;">  ° </p></div></label>
+                        <label for="" class="opacity">Opacity:<div style="height: 30px; margin-left: 10px;"><input class="set-opacity" type="range" value="100" min="0" max="100"></div></label>
+                        <label for="" class="font-size">Font Size: <div style="height: 30px; display: flex; flex-direction: row; justify-content: center; align-items: center;"><div style="margin-left: 10px;"><input class="set-font-size" type="number" value="0" min="0" max="1000"> px</div></div></label>
+                        <label for="" class="text-color">Text Color: <div style="display: flex; flex-direction: row; justify-content: center; align-items: center;"><input class="set-text-color" type="color" value="#ffffff"><button class="transparent-button set-text-transparent" onclick=""><iconify-icon icon="carbon:opacity"></iconify-icon></button></div></label>
+                        <label for="" class="bg-color">Background Color: <div style="display: flex; flex-direction: row; justify-content: center; align-items: center;"><input class="set-background-color" type="color" value="#ffffff"><button class="transparent-button set-background-transparent" onclick=""><iconify-icon icon="carbon:opacity"></iconify-icon></button></div></label>
+                    </div>
+                </div>                
+                <div class="pages">
+            
+                </div>
+                {% comment %} <div class="footer"></div> {% endcomment %}
+            </div>
+                <div class="right-side">
+                <div class="features null">
+                    null
+                </div>
+                <div class="features message-boxes">
+                    <ul>
+                        <li id="message-box1" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox1.png' %}"  class="item" src="{% static 'src/messageboxes/messagebox1.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box2" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox2.png' %}" class="item" src="{% static 'src/messageboxes/messagebox2.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box3" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox3.png' %}" class="item" src="{% static 'src/messageboxes/messagebox3.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box4" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox4.png' %}" class="item" src="{% static 'src/messageboxes/messagebox4.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box5" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox5.png' %}" class="item" src="{% static 'src/messageboxes/messagebox5.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box6" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox6.png' %}" class="item" src="{% static 'src/messageboxes/messagebox6.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box7" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox7.png' %}" class="item" src="{% static 'src/messageboxes/messagebox7.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box8" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox8.png' %}" class="item" src="{% static 'src/messageboxes/messagebox8.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box9" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox9.png' %}" class="item" src="{% static 'src/messageboxes/messagebox9.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box10" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox10.png' %}" class="item" src="{% static 'src/messageboxes/messagebox10.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box11" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox11.png' %}" class="item" src="{% static 'src/messageboxes/messagebox11.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box12" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox12.png' %}" class="item" src="{% static 'src/messageboxes/messagebox12.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box13" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox13.png' %}" class="item" src="{% static 'src/messageboxes/messagebox13.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box14" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox14.png' %}" class="item" src="{% static 'src/messageboxes/messagebox14.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box15" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox15.png' %}" class="item" src="{% static 'src/messageboxes/messagebox15.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="message-box16" class="message-box-element">
+                            <img data-value="{% static 'src/messageboxes/messagebox16.png' %}" class="item" src="{% static 'src/messageboxes/messagebox16.png' %}">
+                            <iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        
+                    </ul>
+                </div>
+                <div class="features shapes">
+                    <div class="shape-elements">
+                        <div class="shape-row1">
+                            <div onclick="selectCursor()" title="Cursor" class="shape-element cursor-button"><iconify-icon icon="solar:cursor-linear"></iconify-icon></div>
+                            <div onclick="selectBrush()" title="Brush" class="shape-element brush-button"><iconify-icon icon="hugeicons:brush"></iconify-icon></div>
+                            <div onclick="selectLine()" title="Line" class="shape-element"><iconify-icon icon="uil:line-alt"></iconify-icon></div>
+                        </div>
+                        <div class="shape-row2">
+                            <div onclick="selectCircle()" title="Circle" class="shape-element"><iconify-icon icon="uil:circle"></iconify-icon></div>
+                            <div onclick="selectSquare()" title="Square" class="shape-element"><iconify-icon icon="uil:square"></iconify-icon></div>
+                            <div onclick="selectTriangle()" title="Triangle" class="shape-element"><iconify-icon icon="uil:triangle"></iconify-icon></div>
+                            {% comment %} <div onclick="selectStar()" title="Star" class="shape-element"><iconify-icon icon="uil:star"></iconify-icon></div> {% endcomment %}
+                        </div>
+                    </div>
+                    <div class="shape-properties">
+                        <label for="" class="shape-property"></label>
+                    </div>
+                </div>
+                <div class="features texts">
+                    <button id="text1" class="text-element"> <h1 style="font-size: 12px;" data-value="action-comic" class="text-item action-comic" >Action Comics</h1></button>
+                    <button id="text2" class="text-element"> <h1 data-value="adventure" class="text-item adventure" >Adventure</h1></button>
+                    <button id="text3" class="text-element"> <h1 data-value="anime-ace" class="text-item anime-ace" >Anime Ace</h1></button>
+                    <button id="text4" class="text-element"> <h1 data-value="badaboom" class="text-item badaboom" >Badaboom</h1></button>
+                    <button id="text5" class="text-element"> <h1 data-value="bouncy" class="text-item bouncy" >Bouncy</h1></button>
+                    <button id="text6" class="text-element"> <h1 data-value="comic-book" class="text-item comic-book" >Comic Book</h1></button>
+                    <button id="text7" class="text-element"> <h1 data-value="comix-loud" class="text-item comix-loud" >Comix Loud</h1></button>
+                    <button id="text8" class="text-element"> <h1 data-value="dirty-brush" class="text-item dirty-brush" >Dirty Brush</h1></button>
+                    <button id="text9" class="text-element"> <h1 data-value="fighting-spirit" class="text-item fighting-spirit" >Fighting Spirit</h1></button>
+                    <button id="text10" class="text-element"><h1 data-value="futura-handwritten" class="text-item futura-handwritten" >Futura Handwritten</h1></button>
+                    <button id="text11" class="text-element"><h1 data-value="giants" class="text-item giants" >Giants</h1></button>
+                    <button id="text12" class="text-element"><h1 data-value="hey-comic" class="text-item hey-comic">Hey Comic</h1></button>
+                    <button id="text13" class="text-element"><h1 data-value="ka-blam" class="text-item ka-blam" >KaBlam</h1></button>
+                    <button id="text14" class="text-element"><h1 data-value="kid-games" class="text-item kid-games" >Kid Games</h1></button>
+                    <button id="text15" class="text-element"><h1 data-value="komikax" class="text-item komikax" >Komikax</h1></button>
+                    <button id="text16" class="text-element"><h1 data-value="mabook" class="text-item mabook" >Mabook</h1></button>
+                    <button id="text17" class="text-element"><h1 data-value="mangat" class="text-item mangat" >mangat</h1></button>
+                    <button id="text18" class="text-element"><h1 data-value="outrun-future" class="text-item outrun-future" >outrun future</h1></button>
+                    <button id="text19" class="text-element"><h1 data-value="potato-sans" class="text-item potato-sans" >potato sans</h1></button>
+                    <button id="text20" class="text-element"><h1 data-value="slapstick-comic" class="text-item slapstick-comic" >slapstick comic</h1></button>
+                    <button id="text21" class="text-element"><h1 data-value="space-comics" class="text-item space-comics" >space comics</h1></button>
+                    <button id="text22" class="text-element"><h1 data-value="super-comic" class="text-item super-comic" >super comic</h1></button>
+                    <button id="text23" class="text-element"><h1 data-value=""super-squad class="text-item super-squad" >super squad</h1></button>
+                    <button id="text24" class="text-element"><h1 data-value="the-amazing-spider-man" class="text-item the-amazing-spider-man" >the amazing spider man</h1></button>
+                    <button id="text25" class="text-element"><h1 data-value="wigglye" class="text-item wigglye" >wigglye</h1></button>
+                    <button id="text26" class="text-element"><h1 data-value="yikes" class="text-item yikes" >yikes</h1></button>
+                </div>
+                <div class="features images">
+                    <div class="row">
+                        <h1>Mr. Comic</h1>
+                        {% csrf_token %}
+                        <input type="radio" id="square" name="image-aspect-ratio" value="1080x1080" checked>
+                        <label for="square"><iconify-icon icon="ion:square-outline"></iconify-icon></label>
+                        <input type="radio" id="portrait" name="image-aspect-ratio" value="1080x1920">
+                        <label for="portrait"><iconify-icon icon="ion:tablet-portrait-outline"></iconify-icon></label>
+                        <input type="radio" id="landscape" name="image-aspect-ratio" value="1920x1080">
+                        <label for="landscape"><iconify-icon icon="ion:tablet-landscape-outline"></iconify-icon></label>
+                    </div>
+                    <div class="chat">
+                        <div style="margin-bottom: 10px; border-radius: 20px;" class="ai-bubble"><img class="ai-logo" src={% static "src/ai-logo.png" %}><p>Hi! Let say something and leave it to me</p></div>
+                    </div>
+                    <form class="prompt-section" method="POST">
+                        {% csrf_token %}
+                        <input type="text" class="prompt" id="user_input" name="prompt" autocomplete="off" placeholder="Say something creative...">
+                        <button type="submit" class="send-button" disabled><iconify-icon icon="mingcute:send-fill"></iconify-icon></button>
+                    </form>
+                </div>
+                <div class="features effects">
+                    <ul>
+                        <li id="effect1" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect1.png' %}" class="item" src="{% static 'src/effects/effect1.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect2" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect2.png' %}" class="item" src="{% static 'src/effects/effect2.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect3" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect3.png' %}" class="item" src="{% static 'src/effects/effect3.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect4" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect4.png' %}" class="item" src="{% static 'src/effects/effect4.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect5" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect5.png' %}" class="item" src="{% static 'src/effects/effect5.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect6" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect6.png' %}" class="item" src="{% static 'src/effects/effect6.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect7" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect7.png' %}" class="item" src="{% static 'src/effects/effect7.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect8" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect8.png' %}" class="item" src="{% static 'src/effects/effect8.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect9" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect9.png' %}" class="item" src="{% static 'src/effects/effect9.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect10" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect10.png' %}" class="item" src="{% static 'src/effects/effect10.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect11" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect11.png' %}" class="item" src="{% static 'src/effects/effect11.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect12" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect12.png' %}" class="item" src="{% static 'src/effects/effect12.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect13" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect13.png' %}" class="item" src="{% static 'src/effects/effect13.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect14" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect14.png' %}" class="item" src="{% static 'src/effects/effect14.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                        <li id="effect15" class="effect-element">
+                            <img data-value="{% static 'src/effects/effect15.png' %}" class="item" src="{% static 'src/effects/effect15.png' %}"><iconify-icon icon="icon-park-outline:add"></iconify-icon>
+                        </li>
+                    </ul>
+                </div>
+                <div class="menubar">
+                    <button class="category message-boxes-button"><iconify-icon icon="mingcute:message-2-line"></iconify-icon>Message Boxes</button>
+                    <button class="category shapes-button"><iconify-icon icon="material-symbols:shapes-outline"></iconify-icon>Shapes</button>
+                    <button class="category texts-button"><iconify-icon icon="icon-park-outline:text"></iconify-icon>Text</button>
+                    <button class="category images-button"><iconify-icon icon="fluent:image-multiple-32-regular"></iconify-icon>Image</button>
+                    <button class="category effects-button"><iconify-icon icon="icon-park-outline:effects"></iconify-icon>Effects</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+<script src="https://unpkg.com/interactjs/dist/interact.min.js"></script>
+<script>
+    const pages = document.querySelector('.pages');
+
+    function addItem(item, page){
+        page.style.boxShadow = 'none';
+
+        const createImage = document.createElement('img');
+        createImage.classList.add('canvas-image');
+        createImage.src = item.getAttribute('data-value');
+        createImage.style.position = 'absolute';
+        createImage.setAttribute('data-x', 0);
+        createImage.setAttribute('data-y', 0);
+    
+        page.insertBefore(createImage, page.firstChild);
+    }
+
+    function addText(item, page){
+        page.style.boxShadow = 'none';
+
+        const createText = document.createElement('p');
+        createText.classList.add('canvas-text');
+        createText.classList.add(item.getAttribute('data-value'));
+        createText.textContent = "Write here...";
+        createText.contentEditable = true;
+        createText.spellcheck = false;
+        createText.style.position = 'absolute';
+        createText.setAttribute('data-x', 0);
+        createText.setAttribute('data-y', 0);
+    
+        page.insertBefore(createText, page.firstChild);
+    }
+
+    function addImage(item, page){
+        page.style.boxShadow = 'none';
+
+        const createImage = document.createElement('img');
+        createImage.classList.add('canvas-image');
+        createImage.src = item.getAttribute('src');
+        createImage.style.position = 'absolute';
+        createImage.setAttribute('data-x', 0);
+        createImage.setAttribute('data-y', 0);
+    
+        page.insertBefore(createImage, page.firstChild);
+    }
+
+    function addPage(){
+        const page = document.createElement('div');
+        page.classList.add('page');
+
+        const pageSettings = document.createElement('div');
+        pageSettings.classList.add('page-settings');
+
+        const upPageButton = document.createElement('button');
+        upPageButton.classList.add('up-page');
+        upPageButton.innerHTML = `<iconify-icon icon="icon-park-solid:up-two"></iconify-icon>`;
+        upPageButton.onclick = function() {
+            movePageUp(page);
+        };
+
+        const downPageButton = document.createElement('button');
+        downPageButton.classList.add('down-page');
+        downPageButton.innerHTML = `<iconify-icon icon="icon-park-solid:down-two"></iconify-icon>`;
+        downPageButton.onclick = function() {
+            movePageDown(page);
+        };
+        
+        const deletePageButton = document.createElement('button');
+        deletePageButton.classList.add('delete-page');
+        deletePageButton.innerHTML = `<iconify-icon icon="tabler:http-delete"></iconify-icon>`;
+        deletePageButton.onclick = function() {
+            deletePage(page);
+        };
+
+        const editPageButton = document.createElement('button');
+        editPageButton.classList.add('edit-page');
+        editPageButton.innerHTML = `<iconify-icon icon="ic:round-edit"></iconify-icon>`;
+        editPageButton.onclick = function() {
+            editPage(page);
+        };
+
+        pageSettings.appendChild(upPageButton);
+        pageSettings.appendChild(downPageButton);
+        pageSettings.appendChild(deletePageButton);
+        pageSettings.appendChild(editPageButton);
+
+        page.appendChild(pageSettings);
+        pages.appendChild(page);
+    }
+</script>
+<script src="{% static 'visual.js'%}"></script>
+{% comment %} <script>
+
+let historyStack = [];
+let redoStack = [];
+
+const editableDiv = document.querySelector('.page');
+
+// Her değişikliği kaydet
+editableDiv.addEventListener('input', function() {
+    historyStack.push(editableDiv.innerHTML);
+    redoStack = []; // Geriye alma sonrası yeni değişiklikler olursa ileriye alma temizlenir
+});
+
+// Ctrl + Z için geri alma
+document.addEventListener('keydown', function(event) {
+    if (event.ctrlKey && event.key === 'z') {
+        if (historyStack.length > 0) {
+            redoStack.push(editableDiv.innerHTML); // Geriye aldığımızı ileriye almak için kaydediyoruz
+            editableDiv.innerHTML = historyStack.pop();
+        }
+        event.preventDefault(); // Varsayılan Ctrl + Z işlevini engelle
+    }
+    
+    // Ctrl + Y için ileriye alma
+    if (event.ctrlKey && event.key === 'y') {
+        if (redoStack.length > 0) {
+            historyStack.push(editableDiv.innerHTML);
+            editableDiv.innerHTML = redoStack.pop();
+        }
+        event.preventDefault(); // Varsayılan Ctrl + Y işlevini engelle
+    }
+});
+</script> {% endcomment %}
+<script>
+    const brushUrl = "{% static 'src/brush.svg' %}";
+    const lineUrl = "{% static 'src/line.svg' %}";
+    const circleUrl = "{% static 'src/circle.svg' %}";
+    const squareUrl = "{% static 'src/square.svg' %}";
+    const triangleUrl = "{% static 'src/triangle.svg' %}";
+    const starUrl = "{% static 'src/star.svg' %}";
+
+    function changeCursor(shape) {
+        switch (shape){
+            case 'brush':
+                document.body.style.cursor = "url('{% static 'src/brush.svg' %}'), auto";
+                break;
+            case 'line':
+                document.body.style.cursor = "url('{% static 'src/line.svg' %}'), auto";
+                break;
+            case 'circle':
+                document.body.style.cursor = "url('{% static 'src/circle.svg' %}'), auto";
+                break;
+            case 'sqaure':
+                document.body.style.cursor = "url('{% static 'src/sqaure.svg' %}'), auto";
+                break;
+            case 'triangle':
+                document.body.style.cursor = "url('{% static 'src/triangle.svg' %}'), auto";
+                break;
+            case 'star':
+                document.body.style.cursor = "url('{% static 'src/star.svg' %}'), auto";
+                break;
+        }
+    }
+
+    function resetCursor(){
+        document.body.style.cursor = '';
+    }
+    
+</script>
+
+<script>
+    document.querySelector('.save').addEventListener('click', () => {
+        const content = document.documentElement.outerHTML;
+        const saveId = null;
+        const data = { 
+            html_content: content,
+            save_id: saveId
+        };
+
+        fetch('/save_page/',{
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data.message);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+
+    })
+
+    function getCookie(name){
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+</script>
+<script src="{% static 'export.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/dom-to-image@2.6.0/dist/dom-to-image.min.js"></script>
+<script src="{% static 'minimap.js' %}"></script>
+<script src="{% static 'page_settings.js' %}"></script>
+<script src="{% static 'item_settings.js' %}"></script>
+<script src="{% static 'drag.js' %}"></script>
+<script src="{% static 'ai.js' %}"></script>
+<script src="{% static 'properties.js' %}"></script>
+<script src="{% static 'shapes.js' %}"></script>
+<script src="{% static 'save.js' %}"></script>
+</html>

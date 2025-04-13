@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    {% load static %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Comic with AI</title>
+    <link rel="stylesheet" href="{% static 'style.css'%}">
+</head>
+<body>
+    <div class="slideshow-container">
+        <div class="slides">
+            <img src="{% static "src/banner1.jpg"%}">
+        </div>
+        <div class="slides">
+            <img src="{% static "src/banner2.jpg"%}">
+        </div>
+        <div class="slides">
+            <img src="{% static "src/banner3.jpg"%}">
+        </div>
+        <div class="slides">
+            <img src="{% static "src/banner4.jpg"%}">
+        </div>
+        <div class="slides">
+            <img src="{% static "src/banner5.jpg"%}">
+        </div>
+        <div class="slides">
+            <img src="{% static "src/banner6.jpg"%}">
+        </div>
+        <div class="slides">
+            <img src="{% static "src/banner7.jpg"%}">
+        </div>
+    </div>
+    <div class="overlay"></div>
+    <div class="description">
+        <h1 id="title">Create Your Dream Comic in Seconds</h1>
+        <ul>
+            <li id="1">"Transform your imagination into comics effortlessly with AI-powered tools."</li>
+            <li id="2">"Design beautiful comic panels, add creative speech bubbles, and bring your stories to life—no artistic skills needed!"</li>
+            <li id="3">"Create your personalized comics in just a few clicks and share your stories with ease."</li>
+            <li id="4">"Take your storytelling to the next level with simple tools for creating professional-quality comics."</li>
+            <li id="5">"From idea to design, our platform helps you create stunning comics in minutes."</li>
+        </ul>
+    </div>
+    <button class="start" onclick="window.location.href='{% url 'comic' %}'">New Project</button>
+    <label onclick="changeEN()" id="en">EN</label>
+    <label onclick="changeTR()" id="tr" style="left: 65px">TR</label>
+
+    <div class="saves-popup">
+        <h2>Saves</h2>
+        <ul class="saves">
+            {% for save in saves %}
+            <li class="save" onclick="window.location.href='{% url 'view_save' save.id %}'">
+                Save #{{ save.id }}
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+</body>
+<script>
+    let slideIndex = 0;
+
+        function showSlides() {
+            const slides = document.querySelectorAll('.slides');
+
+            slides.forEach(slide => slide.style.opacity = '0');
+            slides.forEach(slide => slide.style.height = '0');
+
+            slideIndex++;
+            if (slideIndex > slides.length) {
+                slideIndex = 1;
+            }
+
+            slides[slideIndex - 1].style.opacity = '1';
+            slides[slideIndex - 1].style.height = '100vh';
+
+            setTimeout(showSlides, 3000);
+        }
+
+        showSlides();
+</script>
+<script>
+    function changeTR(){
+        document.getElementById('title').textContent = "Hayalinizdeki Cizgi Romani Saniyeler Icerisinde Olusturun";
+        document.getElementById('1').textContent = '"Hayal gucunuzu cizgi romanlara donusturmek hic bu kadar kolay olmamisti. Yapay zeka destekli araclarla tasariminizi keyifle olusturun!"';
+        document.getElementById('2').textContent = '"Etkileyici cizgi roman panelleri tasarlayin, yaratici konusma balonlari ekleyin ve hikayenizi hayata gecirin!"';
+        document.getElementById('3').textContent = '"Kendi kisisel cizgi romanlarinizi birkac tiklamayla olusturun ve teknolojinin sundugu kolaylikla hikayelerinizi paylasin."';
+        document.getElementById('4').textContent = '"Hikaye anlatiminizi bir ust seviyeye tasiyin; herkesin kolayca kullanabilecegi araclarla profesyonel kalitede cizgi romanlar yapin."';
+        document.getElementById('5').textContent = '"Fikirden tasarima, platformumuz size dakikalar icinde kendi cizgi romaninizi olusturmanizda yardimci oluyor."';
+        document.querySelector('.start').textContent = "Yeni Proje"
+    }
+    function changeEN(){
+        document.getElementById('title').textContent = "Create Your Dream Comic in Seconds";
+        document.getElementById('1').textContent = '"Transform your imagination into comics effortlessly with AI-powered tools."';
+        document.getElementById('2').textContent = '"Design beautiful comic panels, add creative speech bubbles, and bring your stories to life—no artistic skills needed!"';
+        document.getElementById('3').textContent = '"Create your personalized comics in just a few clicks and share your stories with ease."';
+        document.getElementById('4').textContent = '"Take your storytelling to the next level with simple tools for creating professional-quality comics."';
+        document.getElementById('5').textContent = '"From idea to design, our platform helps you create stunning comics in minutes."';
+        document.querySelector('.start').textContent = "New Project"
+    }
+</script>
+</html>
